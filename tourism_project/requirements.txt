@@ -1,0 +1,7 @@
+# Packages for the GitHub Actions pipeline (data prep + training)
+scikit-learn==1.6.1
+xgboost==3.4.1
+pandas==2.2.3
+joblib==1.6.0
+huggingface_hub==1.29.0
+mlflow

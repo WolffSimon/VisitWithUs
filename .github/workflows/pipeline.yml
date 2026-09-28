@@ -1,0 +1,74 @@
+name: Tourism Project Pipeline
+
+# Run on every push to main, and allow manual runs from the Actions tab
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  register-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r tourism_project/requirements.txt
+      - name: Upload Dataset to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/model_building/data_register.py
+
+  data-prep:
+    needs: register-dataset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r tourism_project/requirements.txt
+      - name: Run Data Preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/model_building/prep.py
+
+  model-training:
+    needs: data-prep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r tourism_project/requirements.txt
+      - name: Start MLflow Server
+        run: |
+          nohup mlflow ui --host 0.0.0.0 --port 5000 &  # Run MLflow in the background
+          sleep 5  # Give the server time to start
+      - name: Model Building
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MLFLOW_TRACKING_URI: http://localhost:5000  # Log runs to the server started above
+        run: python tourism_project/model_building/train.py
+
+  deploy-hosting:
+    needs: model-training
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Dependencies
+        run: pip install -r tourism_project/requirements.txt
+      - name: Push files to Frontend Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tourism_project/hosting/hosting.py

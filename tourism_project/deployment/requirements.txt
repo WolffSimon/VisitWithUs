@@ -1,0 +1,7 @@
+# Pinned to the versions used in training, so the saved pipeline loads correctly
+scikit-learn==1.6.1
+xgboost==3.4.1
+pandas==2.2.3
+joblib==1.6.0
+huggingface_hub==1.29.0
+streamlit==1.64.0
